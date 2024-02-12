@@ -76,6 +76,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     generatedYet = False
     Regenerate = False
     sg.theme('Dark Blue 3')
+    
     # Start building layout with the top 2 rows that contain Text elements
     layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20')]]
     # Customization input
@@ -87,7 +88,9 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     # Add the exit button as the last row
     layout += [[sg.Button('Exit', button_color=('white', 'red'))]]
+    
     window = sg.Window('Minesweeper', layout)
+    
     while True:         # The Event Loop
         event, values = window.read()
         print(event, values)
@@ -113,9 +116,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
-cols, rows = (10,8)
-mines = 20
-
+cols, rows, mines = (10, 8, 20)
 minefield = list(list())
 
 regenerate = True
