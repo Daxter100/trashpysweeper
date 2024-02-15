@@ -9,6 +9,8 @@ def printField(field:list) -> bool:
         while i < ySize:
             j = 0
             while j < xSize:
+                if field[i][j]>=0:
+                    print(" ", end = "")
                 print(str(int(field[i][j])), end = " ")
                 j += 1
             print("\n")
@@ -52,15 +54,23 @@ def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yCli
                 field[y-1][x-1] = False
                 x+=1
             y+=1
+        
+        proximities = [[0 for i in range(cols)] for j in range(rows)]
+        for ex in range(cols):
+            for why in range(rows):
+                proximities[why][ex] += mineCount(ex, why, field)
+                if field[why][ex]:
+                    proximities[why][ex] = proximities[why][ex] * (-1)
+        
     else:                                                                                       #if invalid field
         print("error: size<(3*3) or mines>75% or non-mines<9")
-        field = list([False])                                                                   #return empty
-    return field
+        proximities = list([False])                                                                   #return empty
+    return proximities
 
 def mineCount(ex, why, field) -> int:
     count = 0
     y = why-1
-    while y <= why+1:                                       #dumb count, should prolly replace field with lists of ints instead of bools
+    while y <= why+1:
         x = ex-1
         while x <= ex+1:
             try:
@@ -76,7 +86,6 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     generatedYet = False
     Regenerate = False
     sg.theme('Dark Blue 3')
-    
     # Start building layout with the top 2 rows that contain Text elements
     layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20')]]
     # Customization input
@@ -88,9 +97,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     # Add the exit button as the last row
     layout += [[sg.Button('Exit', button_color=('white', 'red'))]]
-    
     window = sg.Window('Minesweeper', layout)
-    
     while True:         # The Event Loop
         event, values = window.read()
         print(event, values)
@@ -107,16 +114,18 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
                 continue                        #if invalid, do not set generatedYet flag, do not update boxes
             generatedYet = True
         
-        if (minefield[yDig][xDig]):           # simulate a hit or a miss
+        if (minefield[yDig][xDig]<0):           # simulate a hit or a miss
             window[event].update('L', button_color=('white','red'))
             window['-MESSAGE-'].update('Boom :(')
         else:
-            window[event].update(mineCount(xDig,yDig,minefield), button_color=('white','black'))
+            window[event].update(minefield[yDig][xDig], button_color=('white','black'))
             window['-MESSAGE-'].update('Mines left: wip')
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
-cols, rows, mines = (10, 8, 20)
+cols, rows = (10,8)
+mines = 20
+
 minefield = list(list())
 
 regenerate = True
