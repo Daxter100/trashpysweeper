@@ -85,6 +85,7 @@ def mineCount(ex, why, field) -> int:
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False
     Regenerate = False
+    print("before window", generatedYet, Regenerate)
     sg.theme('Dark Blue 3')
     # Start building layout with the top 2 rows that contain Text elements
     layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20')]]
@@ -99,24 +100,34 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     # Add the exit button as the last row
     layout += [[sg.Button('Exit', button_color=('white', 'red'))]]
     window = sg.Window('Minesweeper', layout)
+    print("before loop")
     while True:         # The Event Loop
+        print("loopstart")
         event, values = window.read()
+        print("windowread")
         print(event, values)
+        print("brexit")
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
+        print("breset")
         if event == 'Reset':
             Regenerate = True
             break
+            print("befor")
         if event == 'Solver Step':
-            pass                            #run solver once
+            print("slep")
+            pySolver()                            #run solver once
             continue
+        print("after continue")
         yDig, xDig = event
+        print("notgend")
         if not generatedYet:
             minefield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
             if printField(minefield) == False:  #validity check is in print function
                 window['-MESSAGE-'].update('Bad table >:(')
                 continue                        #if invalid, do not set generatedYet flag, do not update boxes
             generatedYet = True
+        
         
         if (minefield[yDig][xDig]<0):           # simulate a hit or a miss
             window[event].update('L', button_color=('white','red'))
@@ -126,6 +137,9 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             window['-MESSAGE-'].update('Mines left: wip')
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
+
+def pySolver():
+    pass
 
 cols, rows = (10,8)
 mines = 20
