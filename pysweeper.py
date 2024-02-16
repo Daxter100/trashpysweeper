@@ -93,6 +93,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     layout += [[sg.Text('Rows(>2): ', font='Default 10')],[sg.Input(default_text=MAX_ROWS, key='-ROWS-')]]
     layout += [[sg.Text('Mines("safe" and <75%): ', font='Default 10')],[sg.Input(default_text=MINES, key='-MINES-')]]
     layout += [[sg.Button('Reset', button_color=('black', 'white'))]]
+    layout += [[sg.Button('Solver Step', button_color=('black', 'green'))]]
     # Add the board, a grid of buttons
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     # Add the exit button as the last row
@@ -106,6 +107,9 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         if event == 'Reset':
             Regenerate = True
             break
+        if event == 'Solver Step':
+            pass                            #run solver once
+            continue
         yDig, xDig = event
         if not generatedYet:
             minefield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
