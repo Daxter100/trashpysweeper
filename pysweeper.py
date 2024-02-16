@@ -113,7 +113,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         if event == 'Reset':
             Regenerate = True
             break
-            print("befor")
+        print("befor")
         if event == 'Solver Step':
             print("slep")
             pySolver()                            #run solver once
