@@ -86,12 +86,39 @@ def mineCount(ex, why, field) -> int:
         y+=1
     return count
 
+def click(ex, why, mode, dugs, mines, windows, events):
+    if mode:                                            #if (intent to dig)
+        if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)
+            dugs[why][ex] = 2                                    # set spot to dug(2), and
+            if (mines[why][ex]<0):                               # display result
+                windows[events].update('L', button_color=('white','red'))
+                windows['-MESSAGE-'].update('Boom :(')
+            else:
+                windows[events].update(mines[why][ex], button_color=('white','black'))
+                windows['-MESSAGE-'].update('Clear!')
+        elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform
+            windows['-MESSAGE-'].update('No Danger Allowed')
+        else:                                                       #else, dug(2) spot was just clicked, only notify
+            windows['-MESSAGE-'].update('No Backtracking Allowed')
+    else:                                                       #else (intent to mark)
+        if dugs[why][ex] != 2:                                #if not dug(2)
+            dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)
+            if dugs[why][ex]:                                    # if finally marked(1),
+                windows[events].update('🚩', button_color=('red','#788bab'))  #display mark
+                windows['-MESSAGE-'].update('Smart.')
+            else:
+                windows[events].update('', button_color=('black', '#283b5b'))  #display mark
+                windows['-MESSAGE-'].update('Wise.')
+        else:
+            windows['-MESSAGE-'].update('Funny.')
+    return ex, why, mode, dugs, mines, windows, events
+
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False    #flipped once, on successful minefield generation
     Regenerate = False      #returned as output, tracking intent to rerun pySweeper(true), instead of exiting everything(false)
     interactMode = False    #tracks marking known mine locations(false) vs digging up a square(true)
     
-    sg.theme('Dark Blue 3')
+    sg.theme('Dark Blue 3') #default button color tuple: ('#FFFFFF', '#283b5b')
     #layout is a list[list[]] type.
     # each [list] is a row
     # each sg.element(), seperated by commas, placed left to right in row
@@ -102,7 +129,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     sg.Text('Rows(>2): ', font='Default 10'), sg.Input(default_text=MAX_ROWS, key='-ROWS-', size=(3,1)),
     sg.Text('Mines(<75%):', font='Default 10'), sg.Input(default_text=MINES, key='-MINES-', size=(4,1))
     ]]
-    layout += [[sg.Button('Mode: ', button_color=('black', 'White')), sg.Text(size=(12,1), key='-MODE-', font='Default 20', text='🚩💣')]]
+    layout += [[sg.Button('Toggle Mode', button_color=('black', 'White')), sg.Text(size=(12,1), key='-MODE-', font='Default 20', text='🚩💣?')]]
     #Add the board, a grid of empty buttons
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     #last row of control buttons
@@ -128,7 +155,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             else:
                 window['-MESSAGE-'].update('No table...')
             continue
-        if event == 'Mode: ':
+        if event == 'Toggle Mode':
             if generatedYet:
                 interactMode = not interactMode     #toggle
                 if interactMode:
@@ -138,45 +165,32 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             else:
                 interactMode = not interactMode     #toggle
                 if interactMode:
-                    window['-MODE-'].update('💣🚩')    #visual fluff     (notice how emoji ruins indentation alignment in npp)
+                    window['-MODE-'].update('💣: Dig')    #visual fluff     (notice how emoji ruins indentation alignment in npp)
                 else:
-                    window['-MODE-'].update('🚩💣')
+                    window['-MODE-'].update('🚩: Mark')
             continue
+        
+        
+        #if loop reaches past this point, there's been a click on a tile
         yDig, xDig = event
         if not generatedYet:
-            minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
-            if printField(minefield) == False:  #validity check is in print function
-                window['-MESSAGE-'].update('Bad table >:(')
-                continue                        #if invalid, do not set generatedYet flag, do not update boxes
-            generatedYet = True
-            if interactMode:    #display correct indicator, based on persistent interact mode
-                window['-MODE-'].update('💣')
+            if not interactMode:                #if mode in default(mark), therefore probably unchanged. Tutorial setup
+                window['-MESSAGE-'].update('Toggle Mode to start digging!')
+                window['-MODE-'].update('🚩: Mark')
+                continue    #tutorial failed
             else:
-                window['-MODE-'].update('🚩')
+                minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
+                if printField(minefield) == False:  #validity check is in print function
+                    window['-MESSAGE-'].update('Bad table >:(')
+                    continue                        #if invalid, do not set generatedYet flag, do not update boxes
+                generatedYet = True
+            
         
-        #if loop reaches past this point, there's been a click
-        if interactMode:                                            #if (intent to dig)
-            if dugfield[yDig][xDig] == 0:                               #if neither dug(2) nor marked(1)
-                dugfield[yDig][xDig] = 2                                    # set spot to dug(2), and
-                if (minefield[yDig][xDig]<0):                               # display result
-                    window[event].update('L', button_color=('white','red'))
-                    window['-MESSAGE-'].update('Boom :(')
-                else:
-                    window[event].update(minefield[yDig][xDig], button_color=('white','black'))
-                    window['-MESSAGE-'].update('Mines left: wip')
-            elif dugfield[yDig][xDig] == 1:                             #else if marked(1), prevent and inform
-                window['-MESSAGE-'].update('No Danger Allowed')
-            else:                                                       #else, dug(2) spot was just clicked, only notify
-                window['-MESSAGE-'].update('No Backtracking Allowed')
-        else:                                                       #else (intent to mark)
-            if dugfield[yDig][xDig] != 2:                                #if not dug(2)
-                dugfield[yDig][xDig] = int(not bool(dugfield[yDig][xDig]))  #toggle (1)<->(0) (method for fun)
-                if dugfield[yDig][xDig]:                                    # if finally marked(1),
-                    window[event].update('🚩', button_color=('red','gray'))  #display mark
-                    window['-MESSAGE-'].update('Smart.')
-                else:
-                    window[event].update('', button_color=('black','gray'))  #display mark
-                    window['-MESSAGE-'].update('Wise.')
+        print(window[event].ButtonColor)
+        #perform click
+        xDig, yDig, interactMode, dugfield, minefield, window, event = click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+        #^ this? I take no questions at this time (readability)
+    
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
