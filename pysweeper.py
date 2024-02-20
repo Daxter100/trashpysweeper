@@ -22,8 +22,7 @@ def printField(field:list) -> bool:
 
 def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yClick:int = 0):
     if (cols>=3) and (rows>=3) and (float(mines/(rows*cols))<0.75 and (mines+9<=rows*cols)) :   #if size and amount of mines valid
-        field = [[False for i in range(cols)] for j in range(rows)]             #assign grid of False bools
-        pristinefield = [[False for i in range(cols)] for j in range(rows)]
+        field = [[False for i in range(cols)] for j in range(rows)]             #assign grid of False bools, for mine locations
         if xClick < 2:                                                      #if first click at any edge, move away from edge
             xClick = 2
         elif xClick >= cols:
@@ -67,6 +66,9 @@ def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yCli
         print("error: size<(3*3) or mines>75% or non-mines<9")
         proximities = list([False])                                                                   #return empty
         pristinefield = list([False])
+    
+    pristinefield = [[0 for i in range(cols)] for j in range(rows)]     #directly output as dugfield, to track digging and marked mines
+    
     return proximities, pristinefield
 
 def mineCount(ex, why, field) -> int:
@@ -87,65 +89,78 @@ def mineCount(ex, why, field) -> int:
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False
     Regenerate = False
+    interactMode = False
     #print("before window", generatedYet, Regenerate)
     sg.theme('Dark Blue 3')
     # Start building layout with the top 2 rows that contain Text elements
-    layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20')]]
+    layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20', text='<>')]]
     # Customization input
-    layout += [[sg.Text('Columns(>2): ', font='Default 10')],[sg.Input(default_text=MAX_COLS, key='-COLUMNS-')]]
-    layout += [[sg.Text('Rows(>2): ', font='Default 10')],[sg.Input(default_text=MAX_ROWS, key='-ROWS-')]]
-    layout += [[sg.Text('Mines("safe" and <75%): ', font='Default 10')],[sg.Input(default_text=MINES, key='-MINES-')]]
-    layout += [[sg.Button('Reset', button_color=('black', 'white'))]]
-    layout += [[sg.Button('Solver Step', button_color=('black', 'green'))]]
+    layout += [[
+    sg.Text('Columns(>2): ', font='Default 10'), sg.InputText(default_text=MAX_COLS, key='-COLUMNS-', size=(3,1)),
+    sg.Text('Rows(>2): ', font='Default 10'), sg.Input(default_text=MAX_ROWS, key='-ROWS-', size=(3,1)),
+    sg.Text('Mines(<75%):', font='Default 10'), sg.Input(default_text=MINES, key='-MINES-', size=(4,1))
+    ]]
+    #layout += [[sg.Push(), sg.Text('Rows(>2): ', font='Default 10'), sg.Input(default_text=MAX_ROWS, key='-ROWS-')]]
+    #layout += [[sg.Push(), sg.Text('Mines(<75%):', font='Default 10'), sg.Input(default_text=MINES, key='-MINES-')]]
+    layout += [[sg.Button('Mode: ', button_color=('black', 'White')), sg.Text(size=(12,1), key='-MODE-', font='Default 20', text='🚩💣')]]
     # Add the board, a grid of buttons
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     # Add the exit button as the last row
-    layout += [[sg.Button('Exit', button_color=('white', 'red'))]]
+    layout += [[
+    sg.Button('Solver Step', button_color=('black', 'green')), 
+    sg.Button('Reset', button_color=('black', 'white')), 
+    sg.Button('Exit', button_color=('white', 'red'))
+    ]]
     window = sg.Window('Minesweeper', layout)
     #print("before loop")
     while True:         # The Event Loop
-        #print("loopstart")
         event, values = window.read()
-        #print("windowread")
         print(event, values)
-        #print("brexit")
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
-        #print("breset")
         if event == 'Reset':
             Regenerate = True
             break
-        #print("beforestep")
         if event == 'Solver Step':
             if generatedYet:
-                print("slep")
-                pySolver()                            #run solver once
+                minefield, dugfield = pySolver(minefield, dugfield)                            #run solver once
+                window['-MESSAGE-'].update('Solved')
             else:
                 window['-MESSAGE-'].update('No table...')
             continue
-        #print("after continue")
+        if event == 'Mode: ':
+            if generatedYet:
+                interactMode = not interactMode
+                if interactMode:
+                    window['-MODE-'].update('💣')
+                else:
+                    window['-MODE-'].update('🚩')
+            continue
         yDig, xDig = event
-        #print("notgend")
         if not generatedYet:
             minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
             if printField(minefield) == False:  #validity check is in print function
                 window['-MESSAGE-'].update('Bad table >:(')
                 continue                        #if invalid, do not set generatedYet flag, do not update boxes
             generatedYet = True
+            window['-MODE-'].update('🚩')
         
-        
-        if (minefield[yDig][xDig]<0):           # simulate a hit or a miss
-            window[event].update('L', button_color=('white','red'))
-            window['-MESSAGE-'].update('Boom :(')
+        #if loop reaches past this point, there's been a click
+        if dugfield[yDig][xDig] == 0:
+            dugfield[yDig][xDig] = 2
+            if (minefield[yDig][xDig]<0):           # simulate a hit or a miss
+                window[event].update('L', button_color=('white','red'))
+                window['-MESSAGE-'].update('Boom :(')
+            else:
+                window[event].update(minefield[yDig][xDig], button_color=('white','black'))
+                window['-MESSAGE-'].update('Mines left: wip')
         else:
-            window[event].update(minefield[yDig][xDig], button_color=('white','black'))
-            window['-MESSAGE-'].update('Mines left: wip')
+            window['-MESSAGE-'].update('No backtracking.')
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
-def pySolver():
-    #do stuff to dugfield
-    pass
+def pySolver(mines, dugs):
+    return mines, dugs
 
 cols, rows = (10,8)
 mines = 20
