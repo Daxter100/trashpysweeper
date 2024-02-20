@@ -23,6 +23,7 @@ def printField(field:list) -> bool:
 def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yClick:int = 0):
     if (cols>=3) and (rows>=3) and (float(mines/(rows*cols))<0.75 and (mines+9<=rows*cols)) :   #if size and amount of mines valid
         field = [[False for i in range(cols)] for j in range(rows)]             #assign grid of False bools
+        pristinefield = [[False for i in range(cols)] for j in range(rows)]
         if xClick < 2:                                                      #if first click at any edge, move away from edge
             xClick = 2
         elif xClick >= cols:
@@ -65,7 +66,8 @@ def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yCli
     else:                                                                                       #if invalid field
         print("error: size<(3*3) or mines>75% or non-mines<9")
         proximities = list([False])                                                                   #return empty
-    return proximities
+        pristinefield = list([False])
+    return proximities, pristinefield
 
 def mineCount(ex, why, field) -> int:
     count = 0
@@ -85,7 +87,7 @@ def mineCount(ex, why, field) -> int:
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False
     Regenerate = False
-    print("before window", generatedYet, Regenerate)
+    #print("before window", generatedYet, Regenerate)
     sg.theme('Dark Blue 3')
     # Start building layout with the top 2 rows that contain Text elements
     layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20')]]
@@ -100,29 +102,32 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     # Add the exit button as the last row
     layout += [[sg.Button('Exit', button_color=('white', 'red'))]]
     window = sg.Window('Minesweeper', layout)
-    print("before loop")
+    #print("before loop")
     while True:         # The Event Loop
-        print("loopstart")
+        #print("loopstart")
         event, values = window.read()
-        print("windowread")
+        #print("windowread")
         print(event, values)
-        print("brexit")
+        #print("brexit")
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
-        print("breset")
+        #print("breset")
         if event == 'Reset':
             Regenerate = True
             break
-        print("befor")
+        #print("beforestep")
         if event == 'Solver Step':
-            print("slep")
-            pySolver()                            #run solver once
+            if generatedYet:
+                print("slep")
+                pySolver()                            #run solver once
+            else:
+                window['-MESSAGE-'].update('No table...')
             continue
-        print("after continue")
+        #print("after continue")
         yDig, xDig = event
-        print("notgend")
+        #print("notgend")
         if not generatedYet:
-            minefield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
+            minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
             if printField(minefield) == False:  #validity check is in print function
                 window['-MESSAGE-'].update('Bad table >:(')
                 continue                        #if invalid, do not set generatedYet flag, do not update boxes
@@ -139,12 +144,14 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
 def pySolver():
+    #do stuff to dugfield
     pass
 
 cols, rows = (10,8)
 mines = 20
 
 minefield = list(list())
+dugfield = list(list())
 
 regenerate = True
 while regenerate:
