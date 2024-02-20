@@ -1,1 +1,4 @@
+make first click dig, while continue with mark mode
 start solver: let step0 be open all zeroes
+
+nitpick: fix crash on window close instead of exit
