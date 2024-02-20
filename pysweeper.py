@@ -87,40 +87,40 @@ def mineCount(ex, why, field) -> int:
     return count
 
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
-    generatedYet = False
-    Regenerate = False
-    interactMode = False
-    #print("before window", generatedYet, Regenerate)
+    generatedYet = False    #flipped once, on successful minefield generation
+    Regenerate = False      #returned as output, tracking intent to rerun pySweeper(true), instead of exiting everything(false)
+    interactMode = False    #tracks marking known mine locations(false) vs digging up a square(true)
+    
     sg.theme('Dark Blue 3')
-    # Start building layout with the top 2 rows that contain Text elements
-    layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(size=(12,1), key='-MESSAGE-', font='Default 20', text='<>')]]
-    # Customization input
+    #layout is a list[list[]] type.
+    # each [list] is a row
+    # each sg.element(), seperated by commas, placed left to right in row
+    layout = [[sg.Text('Mineing', font='Default 25')], [sg.Text(auto_size_text=True, key='-MESSAGE-', font='Default 20', text='<>')]]
+    #Customization input line
     layout += [[
     sg.Text('Columns(>2): ', font='Default 10'), sg.InputText(default_text=MAX_COLS, key='-COLUMNS-', size=(3,1)),
     sg.Text('Rows(>2): ', font='Default 10'), sg.Input(default_text=MAX_ROWS, key='-ROWS-', size=(3,1)),
     sg.Text('Mines(<75%):', font='Default 10'), sg.Input(default_text=MINES, key='-MINES-', size=(4,1))
     ]]
-    #layout += [[sg.Push(), sg.Text('Rows(>2): ', font='Default 10'), sg.Input(default_text=MAX_ROWS, key='-ROWS-')]]
-    #layout += [[sg.Push(), sg.Text('Mines(<75%):', font='Default 10'), sg.Input(default_text=MINES, key='-MINES-')]]
     layout += [[sg.Button('Mode: ', button_color=('black', 'White')), sg.Text(size=(12,1), key='-MODE-', font='Default 20', text='🚩💣')]]
-    # Add the board, a grid of buttons
+    #Add the board, a grid of empty buttons
     layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
-    # Add the exit button as the last row
+    #last row of control buttons
     layout += [[
     sg.Button('Solver Step', button_color=('black', 'green')), 
     sg.Button('Reset', button_color=('black', 'white')), 
     sg.Button('Exit', button_color=('white', 'red'))
     ]]
+    
     window = sg.Window('Minesweeper', layout)
-    #print("before loop")
     while True:         # The Event Loop
         event, values = window.read()
         print(event, values)
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
         if event == 'Reset':
-            Regenerate = True
-            break
+            Regenerate = True   #set intent to rerun pySolver after exit, and then
+            break               #exit
         if event == 'Solver Step':
             if generatedYet:
                 minefield, dugfield = pySolver(minefield, dugfield)                            #run solver once
@@ -130,11 +130,17 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             continue
         if event == 'Mode: ':
             if generatedYet:
-                interactMode = not interactMode
+                interactMode = not interactMode     #toggle
                 if interactMode:
-                    window['-MODE-'].update('💣')
+                    window['-MODE-'].update('💣')    #to dig     (notice how emoji ruins indentation alignment in npp)
                 else:
-                    window['-MODE-'].update('🚩')
+                    window['-MODE-'].update('🚩')    #to mark
+            else:
+                interactMode = not interactMode     #toggle
+                if interactMode:
+                    window['-MODE-'].update('💣🚩')    #visual fluff     (notice how emoji ruins indentation alignment in npp)
+                else:
+                    window['-MODE-'].update('🚩💣')
             continue
         yDig, xDig = event
         if not generatedYet:
@@ -143,19 +149,34 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
                 window['-MESSAGE-'].update('Bad table >:(')
                 continue                        #if invalid, do not set generatedYet flag, do not update boxes
             generatedYet = True
-            window['-MODE-'].update('🚩')
+            if interactMode:    #display correct indicator, based on persistent interact mode
+                window['-MODE-'].update('💣')
+            else:
+                window['-MODE-'].update('🚩')
         
         #if loop reaches past this point, there's been a click
-        if dugfield[yDig][xDig] == 0:
-            dugfield[yDig][xDig] = 2
-            if (minefield[yDig][xDig]<0):           # simulate a hit or a miss
-                window[event].update('L', button_color=('white','red'))
-                window['-MESSAGE-'].update('Boom :(')
-            else:
-                window[event].update(minefield[yDig][xDig], button_color=('white','black'))
-                window['-MESSAGE-'].update('Mines left: wip')
-        else:
-            window['-MESSAGE-'].update('No backtracking.')
+        if interactMode:                                            #if (intent to dig)
+            if dugfield[yDig][xDig] == 0:                               #if neither dug(2) nor marked(1)
+                dugfield[yDig][xDig] = 2                                    # set spot to dug(2), and
+                if (minefield[yDig][xDig]<0):                               # display result
+                    window[event].update('L', button_color=('white','red'))
+                    window['-MESSAGE-'].update('Boom :(')
+                else:
+                    window[event].update(minefield[yDig][xDig], button_color=('white','black'))
+                    window['-MESSAGE-'].update('Mines left: wip')
+            elif dugfield[yDig][xDig] == 1:                             #else if marked(1), prevent and inform
+                window['-MESSAGE-'].update('No Danger Allowed')
+            else:                                                       #else, dug(2) spot was just clicked, only notify
+                window['-MESSAGE-'].update('No Backtracking Allowed')
+        else:                                                       #else (intent to mark)
+            if dugfield[yDig][xDig] != 2:                                #if not dug(2)
+                dugfield[yDig][xDig] = int(not bool(dugfield[yDig][xDig]))  #toggle (1)<->(0) (method for fun)
+                if dugfield[yDig][xDig]:                                    # if finally marked(1),
+                    window[event].update('🚩', button_color=('red','gray'))  #display mark
+                    window['-MESSAGE-'].update('Smart.')
+                else:
+                    window[event].update('', button_color=('black','gray'))  #display mark
+                    window['-MESSAGE-'].update('Wise.')
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
