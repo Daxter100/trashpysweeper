@@ -20,7 +20,7 @@ def printField(field:list) -> bool:
         print("Bad table")
         return False
 
-def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yClick:int = 0):
+def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yClick:int = 0):
     if (cols>=3) and (rows>=3) and (float(mines/(rows*cols))<0.75 and (mines+9<=rows*cols)) :   #if size and amount of mines valid
         field = [[False for i in range(cols)] for j in range(rows)]             #assign grid of False bools, for mine locations
         if xClick < 2:                                                      #if first click at any edge, move away from edge
@@ -71,46 +71,47 @@ def generateField(cols: int=10, rows: int=8, mines: int=10, xClick:int = 0, yCli
     
     return proximities, pristinefield
 
-def mineCount(ex, why, field) -> int:
+def mineCount(ex, why, booleanOrDugField) -> int:           #on being provided dugfield, counts Marks
     count = 0
     y = why-1
     while y <= why+1:
         x = ex-1
         while x <= ex+1:
             try:
-                if y>=0 and x>=0 and field[y][x]:
+                if y>=0 and x>=0 and int(booleanOrDugField[y][x])==1:   #counts Trues for booleans, or specifically 1s, for dugfield
                     count += 1
             except IndexError:
                 pass #it's ok
             x+=1
         y+=1
     return count
-
+    
+#        (x, y, dig/mark, dugfield, minefield, window, event): click function targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
 def click(ex, why, mode, dugs, mines, windows, events):
     if mode:                                            #if (intent to dig)
-        if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)
-            dugs[why][ex] = 2                                    # set spot to dug(2), and
-            if (mines[why][ex]<0):                               # display result
-                windows[events].update('L', button_color=('white','red'))
-                windows['-MESSAGE-'].update('Boom :(')
-            else:
-                windows[events].update(mines[why][ex], button_color=('white','black'))
-                windows['-MESSAGE-'].update('Clear!')
-        elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform
-            windows['-MESSAGE-'].update('No Danger Allowed')
-        else:                                                       #else, dug(2) spot was just clicked, only notify
-            windows['-MESSAGE-'].update('No Backtracking Allowed')
+        if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
+            dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
+            if (mines[why][ex]<0):                               # display result                                               #
+                windows[events].update('L', button_color=('white','red'))                                                       #
+                windows['-MESSAGE-'].update('Boom :(')                                                                          #
+            else:                                                                                                               #    Dig
+                windows[events].update(mines[why][ex], button_color=('white','black'))                                          #
+                windows['-MESSAGE-'].update('Clear!')                                                                           #
+        elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform                             #
+            windows['-MESSAGE-'].update('No Danger Allowed')                                                                    #
+        else:                                                       #else, dug(2) spot was just clicked, only notify            #
+            windows['-MESSAGE-'].update('No Backtracking Allowed')                                                              #-----------
     else:                                                       #else (intent to mark)
-        if dugs[why][ex] != 2:                                #if not dug(2)
-            dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)
-            if dugs[why][ex]:                                    # if finally marked(1),
-                windows[events].update('🚩', button_color=('red','#788bab'))  #display mark
-                windows['-MESSAGE-'].update('Smart.')
-            else:
-                windows[events].update('', button_color=('black', '#283b5b'))  #display mark
-                windows['-MESSAGE-'].update('Wise.')
-        else:
-            windows['-MESSAGE-'].update('Funny.')
+        if dugs[why][ex] != 2:                                #if not dug(2)                                                    #-----------
+            dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
+            if dugs[why][ex]:                                    # if finally marked(1),                                        #
+                windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
+                windows['-MESSAGE-'].update('Smart.')                                                                           #
+            else:                                                                                                               #    Mark
+                windows[events].update('', button_color=('black', '#283b5b'))  #display mark                                    #
+                windows['-MESSAGE-'].update('Wise.')                                                                            #
+        else:                                                                                                                   #
+            windows['-MESSAGE-'].update('Funny.')                                                                               #-----------
     return ex, why, mode, dugs, mines, windows, events
 
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
@@ -131,7 +132,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     ]]
     layout += [[sg.Button('Toggle Mode', button_color=('black', 'White')), sg.Text(size=(12,1), key='-MODE-', font='Default 20', text='🚩💣?')]]
     #Add the board, a grid of empty buttons
-    layout += [[sg.Button(str(''), size=(4, 2), pad=(0,0), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
+    layout += [[sg.Button(str(''), size=(4, 2), pad=(0,1), border_width=1, key=(row,col)) for col in range(MAX_COLS)] for row in range(MAX_ROWS)]
     #last row of control buttons
     layout += [[
     sg.Button('Solver Step', button_color=('black', 'green')), 
@@ -195,24 +196,41 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
 def pySolver(mines, dugs):
-    #minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
-    #def rule 0():
-        #set modeIntent to Dig
-        #for (all dug spaces):
-        #   if minesLeft[y][x] == 0:
-        #       dig(all surrounding)
-    #def rule 1():
-        #set modeIntent to Mark
-        #for (all dug spaces):
-        #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
-        #       mark(all surrounding)
+    if mines[0] == False:                   #wash our hands first
+        print("Can't solve a Bad Table")
+        return
+    
+    boolField = [[False for i in range(len(mines[0]))] for j in range(len(mines))]
+    for y in range(len(mines)):
+        for x in range(len(mines[0])):
+            boolField[y][x] = bool(mines[y][x] < 0)             #legibility bool()
+    
+    somethingClicked = True
+    while somethingClicked:                 #go on as long as stuff is done
+        somethingClicked = False
+        for y in range(len(mines)):
+            for x in range(len(mines[0])):
+                if dugs[y][x] == 2:
+                    minesNotFound = int(mines[y][x] - mineCount(x, y, dugs))    #mineCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1)
+                    print(minesNotFound)
+            #   if minesLeft[y][x] == 0:
+#           #       dig(all surrounding)
+#           #       somethingClicked = true
+#        #def rule 1():
+#            #set modeIntent to Mark
+#            #for (all dug spaces):
+#            #   minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
+###            #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
+#            #       mark(all surrounding)
+#            #       somethingClicked = true
+#    
     return mines, dugs
 
 cols, rows = (10,8)
 mines = 20
 
-minefield = list(list())
-dugfield = list(list())
+minefield = list()      #establish scope
+dugfield = list()
 
 regenerate = True
 while regenerate:
