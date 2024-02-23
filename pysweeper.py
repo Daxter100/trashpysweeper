@@ -146,7 +146,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
         if event == 'Reset':
-            Regenerate = True   #set intent to rerun pySolver after exit, and then
+            Regenerate = True   #set intent to rerun pySweeper after exit, and then
             break               #exit
         if event == 'Solver Step':
             if generatedYet:
@@ -195,6 +195,17 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
 
 def pySolver(mines, dugs):
+    #minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
+    #def rule 0():
+        #set modeIntent to Dig
+        #for (all dug spaces):
+        #   if minesLeft[y][x] == 0:
+        #       dig(all surrounding)
+    #def rule 1():
+        #set modeIntent to Mark
+        #for (all dug spaces):
+        #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
+        #       mark(all surrounding)
     return mines, dugs
 
 cols, rows = (10,8)
