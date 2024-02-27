@@ -142,10 +142,9 @@ def pySolver(dugs, mines, windows, events):
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
-                                    print("Try at " + str(xClick) + ", " + str(yClick) + ", with event: ")
                                     dugs, mines, somethingClicked = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
                                 except IndexError:
-                                    print("IndexError handled at " + string(xClick) + ", " + string(yClick))    #it's ok
+                                    print("IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
             #   if minesLeft[y][x] == 0:
 #           #       dig(all surrounding)
 #           #       somethingClicked = true
