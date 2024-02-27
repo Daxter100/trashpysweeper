@@ -145,9 +145,6 @@ def pySolver(dugs, mines, windows, events):
                                     dugs, mines, somethingClicked = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
                                 except IndexError:
                                     print("IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
-            #   if minesLeft[y][x] == 0:
-#           #       dig(all surrounding)
-#           #       somethingClicked = true
 #        #def rule 1():
 #            #set modeIntent to Mark
 #            #for (all dug spaces):
