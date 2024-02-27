@@ -88,11 +88,13 @@ def mineCount(ex, why, booleanOrDugField) -> int:           #on being provided d
 
 #        (x, y, dig/mark, dugfield, minefield, window, event): click function targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
 def click(ex, why, mode, dugs, mines, windows, events):
+    flippedSomething = False
     if 0<=why<=len(mines)-1:        #sanitize, to prevent window[event] reaching outside the intended area when used in pySolver, with manual input events
         if 0<=ex<=len(mines[0])-1:  #TODO: move checks to pySolver
             if mode:                                            #if (intent to dig)
                 if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
                     dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
+                    flippedSomething = True
                     if (mines[why][ex]<0):                               # display result                                               #
                         windows[events].update('L', button_color=('white','red'))                                                       #
                         windows['-MESSAGE-'].update('Boom :(')                                                                          #
@@ -106,15 +108,16 @@ def click(ex, why, mode, dugs, mines, windows, events):
             else:                                                       #else (intent to mark)
                 if dugs[why][ex] != 2:                                #if not dug(2)                                                    #-----------
                     dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
+                    flippedSomething = True
                     if dugs[why][ex]:                                    # if finally marked(1),                                        #
                         windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
                         windows['-MESSAGE-'].update('Smart.')                                                                           #
                     else:                                                                                                               #    Mark
-                        windows[events].update('', button_color=('black', '#283b5b'))  #display mark                                    #
+                        windows[events].update('', button_color=('black', '#283b5b'))  #display undug                                   #
                         windows['-MESSAGE-'].update('Wise.')                                                                            #
                 else:                                                                                                                   #
                     windows['-MESSAGE-'].update('Funny.')                                                                               #-----------
-    return dugs, mines
+    return dugs, mines, flippedSomething
 
 
 def pySolver(dugs, mines, windows, events):
@@ -140,7 +143,7 @@ def pySolver(dugs, mines, windows, events):
                             for xClick in range(x-1, x+2):
                                 try:
                                     print("Try at " + str(xClick) + ", " + str(yClick) + ", with event: ")
-                                    dugs, mines = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
+                                    dugs, mines, somethingClicked = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
                                 except IndexError:
                                     print("IndexError handled at " + string(xClick) + ", " + string(yClick))    #it's ok
             #   if minesLeft[y][x] == 0:
@@ -161,6 +164,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
     generatedYet = False    #flipped once, on successful minefield generation
     Regenerate = False      #returned as output, tracking intent to rerun pySweeper(true), instead of exiting everything(false)
     interactMode = False    #tracks marking known mine locations(false) vs digging up a square(true)
+    wasTileChangedDuringLastEvent = False   #vestigial bool, returned by click(), used by pySolver() for now
     
     sg.theme('Dark Blue 3') #default button color tuple: ('#FFFFFF', '#283b5b')
     #layout is a list[list[]] type.
@@ -232,7 +236,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         
         print(window[event].ButtonColor)
         #perform click
-        dugfield, minefield = click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+        dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window, event)
         #^ this? I take no questions at this time (readability)
     
     window.close()
