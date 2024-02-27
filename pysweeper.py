@@ -85,34 +85,77 @@ def mineCount(ex, why, booleanOrDugField) -> int:           #on being provided d
             x+=1
         y+=1
     return count
-    
+
 #        (x, y, dig/mark, dugfield, minefield, window, event): click function targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
 def click(ex, why, mode, dugs, mines, windows, events):
-    if mode:                                            #if (intent to dig)
-        if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
-            dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
-            if (mines[why][ex]<0):                               # display result                                               #
-                windows[events].update('L', button_color=('white','red'))                                                       #
-                windows['-MESSAGE-'].update('Boom :(')                                                                          #
-            else:                                                                                                               #    Dig
-                windows[events].update(mines[why][ex], button_color=('white','black'))                                          #
-                windows['-MESSAGE-'].update('Clear!')                                                                           #
-        elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform                             #
-            windows['-MESSAGE-'].update('No Danger Allowed')                                                                    #
-        else:                                                       #else, dug(2) spot was just clicked, only notify            #
-            windows['-MESSAGE-'].update('No Backtracking Allowed')                                                              #-----------
-    else:                                                       #else (intent to mark)
-        if dugs[why][ex] != 2:                                #if not dug(2)                                                    #-----------
-            dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
-            if dugs[why][ex]:                                    # if finally marked(1),                                        #
-                windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
-                windows['-MESSAGE-'].update('Smart.')                                                                           #
-            else:                                                                                                               #    Mark
-                windows[events].update('', button_color=('black', '#283b5b'))  #display mark                                    #
-                windows['-MESSAGE-'].update('Wise.')                                                                            #
-        else:                                                                                                                   #
-            windows['-MESSAGE-'].update('Funny.')                                                                               #-----------
-    return ex, why, mode, dugs, mines, windows, events
+    if 0<=why<=len(mines)-1:        #sanitize, to prevent window[event] reaching outside the intended area when used in pySolver, with manual input events
+        if 0<=ex<=len(mines[0])-1:  #TODO: move checks to pySolver
+            if mode:                                            #if (intent to dig)
+                if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
+                    dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
+                    if (mines[why][ex]<0):                               # display result                                               #
+                        windows[events].update('L', button_color=('white','red'))                                                       #
+                        windows['-MESSAGE-'].update('Boom :(')                                                                          #
+                    else:                                                                                                               #    Dig
+                        windows[events].update(mines[why][ex], button_color=('white','black'))                                          #
+                        windows['-MESSAGE-'].update('Clear!')                                                                           #
+                elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform                             #
+                    windows['-MESSAGE-'].update('No Danger Allowed')                                                                    #
+                else:                                                       #else, dug(2) spot was just clicked, only notify            #
+                    windows['-MESSAGE-'].update('No Backtracking Allowed')                                                              #-----------
+            else:                                                       #else (intent to mark)
+                if dugs[why][ex] != 2:                                #if not dug(2)                                                    #-----------
+                    dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
+                    if dugs[why][ex]:                                    # if finally marked(1),                                        #
+                        windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
+                        windows['-MESSAGE-'].update('Smart.')                                                                           #
+                    else:                                                                                                               #    Mark
+                        windows[events].update('', button_color=('black', '#283b5b'))  #display mark                                    #
+                        windows['-MESSAGE-'].update('Wise.')                                                                            #
+                else:                                                                                                                   #
+                    windows['-MESSAGE-'].update('Funny.')                                                                               #-----------
+    return dugs, mines
+
+
+def pySolver(dugs, mines, windows, events):
+    if mines[0] == False:                   #wash our hands first
+        print("Can't solve a Bad Table")
+        return
+    
+    boolField = [[False for i in range(len(mines[0]))] for j in range(len(mines))]
+    for y in range(len(mines)):
+        for x in range(len(mines[0])):
+            boolField[y][x] = bool(mines[y][x] < 0)             #legibility bool()
+    
+    somethingClicked = True
+    while somethingClicked:                 #go on as long as stuff is done
+        somethingClicked = False
+        for y in range(len(mines)):
+            for x in range(len(mines[0])):
+                if dugs[y][x] == 2:
+                    minesNotFound = int(mines[y][x] - mineCount(x, y, dugs))    #mineCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1)
+                    print(minesNotFound)
+                    if minesNotFound == 0:
+                        for yClick in range(y-1, y+2):
+                            for xClick in range(x-1, x+2):
+                                try:
+                                    print("Try at " + str(xClick) + ", " + str(yClick) + ", with event: ")
+                                    dugs, mines = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
+                                except IndexError:
+                                    print("IndexError handled at " + string(xClick) + ", " + string(yClick))    #it's ok
+            #   if minesLeft[y][x] == 0:
+#           #       dig(all surrounding)
+#           #       somethingClicked = true
+#        #def rule 1():
+#            #set modeIntent to Mark
+#            #for (all dug spaces):
+#            #   minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
+###            #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
+#            #       mark(all surrounding)
+#            #       somethingClicked = true
+#    
+    return dugs, mines
+
 
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False    #flipped once, on successful minefield generation
@@ -151,7 +194,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             break               #exit
         if event == 'Solver Step':
             if generatedYet:
-                minefield, dugfield = pySolver(minefield, dugfield)                            #run solver once
+                dugfield, minefield = pySolver(dugfield, minefield, window, event)                            #run solver once
                 window['-MESSAGE-'].update('Solved')
             else:
                 window['-MESSAGE-'].update('No table...')
@@ -189,42 +232,11 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         
         print(window[event].ButtonColor)
         #perform click
-        xDig, yDig, interactMode, dugfield, minefield, window, event = click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+        dugfield, minefield = click(xDig, yDig, interactMode, dugfield, minefield, window, event)
         #^ this? I take no questions at this time (readability)
     
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
-
-def pySolver(mines, dugs):
-    if mines[0] == False:                   #wash our hands first
-        print("Can't solve a Bad Table")
-        return
-    
-    boolField = [[False for i in range(len(mines[0]))] for j in range(len(mines))]
-    for y in range(len(mines)):
-        for x in range(len(mines[0])):
-            boolField[y][x] = bool(mines[y][x] < 0)             #legibility bool()
-    
-    somethingClicked = True
-    while somethingClicked:                 #go on as long as stuff is done
-        somethingClicked = False
-        for y in range(len(mines)):
-            for x in range(len(mines[0])):
-                if dugs[y][x] == 2:
-                    minesNotFound = int(mines[y][x] - mineCount(x, y, dugs))    #mineCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1)
-                    print(minesNotFound)
-            #   if minesLeft[y][x] == 0:
-#           #       dig(all surrounding)
-#           #       somethingClicked = true
-#        #def rule 1():
-#            #set modeIntent to Mark
-#            #for (all dug spaces):
-#            #   minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
-###            #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
-#            #       mark(all surrounding)
-#            #       somethingClicked = true
-#    
-    return mines, dugs
 
 cols, rows = (10,8)
 mines = 20
