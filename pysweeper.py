@@ -58,7 +58,7 @@ def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yCli
         proximities = [[0 for i in range(cols)] for j in range(rows)]
         for ex in range(cols):
             for why in range(rows):
-                proximities[why][ex] += mineCount(ex, why, field)
+                proximities[why][ex] += surroundCount(ex, why, field)   #surroundCount by default counts true bools surrounding (and including) x,y
                 if field[why][ex]:
                     proximities[why][ex] = proximities[why][ex] * (-1)
         
@@ -71,14 +71,14 @@ def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yCli
     
     return proximities, pristinefield
 
-def mineCount(ex, why, booleanOrDugField) -> int:           #on being provided dugfield, counts Marks
+def surroundCount(ex, why, booleanOrDugField, measureTarget=1) -> int:           #on being provided dugfield, counts Marks
     count = 0
     y = why-1
     while y <= why+1:
         x = ex-1
         while x <= ex+1:
             try:
-                if y>=0 and x>=0 and int(booleanOrDugField[y][x])==1:   #counts Trues for booleans, or specifically 1s, for dugfield
+                if y>=0 and x>=0 and int(booleanOrDugField[y][x])==int(measureTarget):   #counts Trues for booleans, or specifically 1s, for dugfield
                     count += 1
             except IndexError:
                 pass #it's ok
@@ -131,20 +131,34 @@ def pySolver(dugs, mines, windows, events):
             boolField[y][x] = bool(mines[y][x] < 0)             #legibility bool()
     
     somethingClicked = True
+    diodeBool = False
     while somethingClicked:                 #go on as long as stuff is done
         somethingClicked = False
         for y in range(len(mines)):
             for x in range(len(mines[0])):
                 if dugs[y][x] == 2:
-                    minesNotFound = int(mines[y][x] - mineCount(x, y, dugs))    #mineCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1)
-                    print(minesNotFound)
-                    if minesNotFound == 0:
+                    minesNotFound = int(mines[y][x] - surroundCount(x, y, dugs))    #surroundCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1, as opposed to ==0 or ==2)
+                    safeTilesNotDug = int(minesNotFound - surroundCount(x, y, dugs, 0))    #when provided with target, counts target instead (in this case, ==0, therefore pristine tiles)
+                    if minesNotFound == 0:                  #rule 0
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
-                                    dugs, mines, somethingClicked = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))
+                                    dugs, mines, diodeBool = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))     #dig all surrounding
+                                    if diodeBool:
+                                        print("hit" + str(xClick) + str(yClick))
+                                        somethingClicked = True
                                 except IndexError:
-                                    print("IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
+                                    print("minesNotFound IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
+                    elif safeTilesNotDug == 0:              #rule 1
+                        for yClick in range(y-1, y+2):
+                            for xClick in range(x-1, x+2):
+                                try:
+                                    dugs, mines, diodeBool = click(xClick, yClick, False, dugs, mines, windows, (yClick,xClick))    #Mark-attempt all surrounding
+                                    if diodeBool:
+                                        print("tag" + str(xClick) + str(yClick))
+                                        somethingClicked = True
+                                except IndexError:
+                                    print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
 #        #def rule 1():
 #            #set modeIntent to Mark
 #            #for (all dug spaces):
