@@ -159,14 +159,13 @@ def pySolver(dugs, mines, windows, events):
                                         somethingClicked = True
                                 except IndexError:
                                     print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
-#        #def rule 1():
-#            #set modeIntent to Mark
-#            #for (all dug spaces):
-#            #   minesLeft[y][x] = minefield[y][x] - minesConfirmedSurrounding[y][x]
-###            #   if minesLeft[y][x] == undugSurroundingSpaces[y][x]
-#            #       mark(all surrounding)
-#            #       somethingClicked = true
-#    
+    somethingClicked = True
+    while somethingClicked:
+        for y in range(len(mines)):
+            for x in range(len(mines[0])):
+                if surroundCount(x, y, dugs, 2)>0 and dugs[y][x] == 0:
+                    pass
+        somethingClicked = False
     return dugs, mines
 
 
