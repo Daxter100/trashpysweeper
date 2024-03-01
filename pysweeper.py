@@ -94,7 +94,7 @@ def click(ex, why, mode, dugs, mines, windows, events):
             if mode:                                            #if (intent to dig)
                 if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
                     dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
-                    flippedSomething = True
+                    flippedSomething = True                                                                                             #
                     if (mines[why][ex]<0):                               # display result                                               #
                         windows[events].update('L', button_color=('white','red'))                                                       #
                         windows['-MESSAGE-'].update('Boom :(')                                                                          #
@@ -136,7 +136,7 @@ def pySolver(dugs, mines, windows, events):
         somethingClicked = False
         for y in range(len(mines)):
             for x in range(len(mines[0])):
-                if dugs[y][x] == 2:
+                if dugs[y][x] == 2:             #TODO: fix bugged behavior due to: Marking or not marking a tile, does *not* change safeTilesNotDug, making it infinite looping when it becomes 0
                     minesNotFound = int(mines[y][x] - surroundCount(x, y, dugs))    #surroundCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1, as opposed to ==0 or ==2)
                     safeTilesNotDug = int(minesNotFound - surroundCount(x, y, dugs, 0))    #when provided with target, counts target instead (in this case, ==0, therefore pristine tiles)
                     if minesNotFound == 0:                  #rule 0
