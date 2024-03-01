@@ -165,7 +165,9 @@ def pySolver(dugs, mines, windows, events):
         for y in range(len(mines)):
             for x in range(len(mines[0])):                              #for every tile
                 if dugs[y][x] == 2 and surroundCount(x, y, dugs, 0)>0:  #if dug and surrounded by nonzero undug tiles
-                    pass    #add undug coords list, to list with key=(x,y); 
+                    pass
+                    #for xyclicks
+                        #dict = {(x,y):+=[xlcik y click]    #add undug coords list, to list with key=(x,y); 
         #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
         #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
         somethingClicked = False
