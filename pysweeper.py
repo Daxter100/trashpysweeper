@@ -136,7 +136,7 @@ def pySolver(dugs, mines, windows, events):
         somethingClicked = False
         for y in range(len(mines)):
             for x in range(len(mines[0])):
-                if dugs[y][x] == 2:             #TODO: fix bugged behavior due to: Marking or not marking a tile, does *not* change safeTilesNotDug, making it infinite looping when it becomes 0
+                if dugs[y][x] == 2:
                     minesNotFound = int(mines[y][x] - surroundCount(x, y, dugs))    #surroundCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1, as opposed to ==0 or ==2)
                     safeTilesNotDug = int(minesNotFound - surroundCount(x, y, dugs, 0))    #when provided with target, counts target instead (in this case, ==0, therefore pristine tiles)
                     if minesNotFound == 0:                  #rule 0
@@ -153,7 +153,8 @@ def pySolver(dugs, mines, windows, events):
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
-                                    dugs, mines, diodeBool = click(xClick, yClick, False, dugs, mines, windows, (yClick,xClick))    #Mark-attempt all surrounding
+                                    if dugs[yClick][xClick] == 0:
+                                        dugs, mines, diodeBool = click(xClick, yClick, False, dugs, mines, windows, (yClick,xClick))    #Mark-attempt all surrounding
                                     if diodeBool:
                                         print("tag" + str(xClick) + str(yClick))
                                         somethingClicked = True
