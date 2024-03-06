@@ -162,17 +162,18 @@ def pySolver(dugs, mines, windows, events):
                                     print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
     somethingClicked = True
     while somethingClicked:
-        dict = {}
+        dugAdjacency = {}
         for y in range(len(mines)):
             for x in range(len(mines[0])):                              #for every tile
                 if dugs[y][x] == 2 and surroundCount(x, y, dugs, 0)>0:  #if dug and surrounded by nonzero undug tiles
-                    pass
-                    #for xyclicks
-                        #try:
-                            #dict[x,y] += [(xclik, yclick)]    #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
-                        #except KeyError:
-                            #print("handled keyerror" + str((x,y)))
-                            #dict[x,y] = [(xclik, yclick)]    #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
+                    for yClick in range(y-1, y+2):                      #check surrounding 8 tiles
+                        for xClick in range(x-1, x+2):
+                            if dugs[yClick][xClick] == 0:               #if tile is undug
+                                try:
+                                    dugAdjacency[x,y] += [(xclik, yclick)]      #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
+                                except KeyError:
+                                    print("handled keyerror of undug " + str((xClick,yClick)) + " in relation to dug " + str((x,y)))
+                                    dugAdjacency[x,y] = [(xclik, yclick)]       #using keyerror for the sake of easier writing, TODO: Not do that.
         #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
         #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
         somethingClicked = False
