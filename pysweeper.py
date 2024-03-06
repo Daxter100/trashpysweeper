@@ -162,12 +162,17 @@ def pySolver(dugs, mines, windows, events):
                                     print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
     somethingClicked = True
     while somethingClicked:
+        dict = {}
         for y in range(len(mines)):
             for x in range(len(mines[0])):                              #for every tile
                 if dugs[y][x] == 2 and surroundCount(x, y, dugs, 0)>0:  #if dug and surrounded by nonzero undug tiles
                     pass
                     #for xyclicks
-                        #dict = {(x,y):+=[xlcik y click]    #add undug coords list, to list with key=(x,y); 
+                        #try:
+                            #dict[x,y] += [(xclik, yclick)]    #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
+                        #except KeyError:
+                            #print("handled keyerror" + str((x,y)))
+                            #dict[x,y] = [(xclik, yclick)]    #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
         #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
         #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
         somethingClicked = False
