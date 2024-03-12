@@ -183,7 +183,7 @@ def pySolver(dugs, mines, windows, events):
     for y in range(len(mines)):
         for x in range(len(mines[0])):
             #if dugAdjacency[x,y] exists:
-            try:
+            if (x,y) in dugAdjacency:
                 #for yAdjacent in range of y+-2, xAdjacent in range of x+-2:
                 for yAdj in range(y-2, y+3):
                     for xAdj in range(x-2, x+3):
@@ -194,8 +194,8 @@ def pySolver(dugs, mines, windows, events):
                         #if excessMines > 0 AND excessMines == (mines[xAdj,yAdj]-surroundCount(1)):
                             #Mark excess undug of [x,y] if it exists
                             #Dig excess undug of [xAdj,yAdj] if it exists
-            except KeyError:
-                pass #[x,y] not an information-giving tile
+            else:
+                print("x,y not in dugAdjacency")
     #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
     #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
     return dugs, mines
