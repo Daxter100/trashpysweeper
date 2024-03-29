@@ -160,9 +160,8 @@ def pySolver(dugs, mines, windows, events):
                                         somethingClicked = True
                                 except IndexError:
                                     print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
-    #somethingClicked = True
-    #while somethingClicked:
-        #somethingClicked = False
+    
+    #       rule 2 begins:
     dugsAdjacency = {}
     for y in range(len(mines)):                                     #for every tile
         for x in range(len(mines[0])):
@@ -183,13 +182,13 @@ def pySolver(dugs, mines, windows, events):
     for y in range(len(mines)):
         for x in range(len(mines[0])):
             #if dugAdjacency[x,y] exists:
-            if (x,y) in dugAdjacency:
+            if (x,y) in dugsAdjacency:
                 #for yAdjacent in range of y+-2, xAdjacent in range of x+-2:
                 for yAdj in range(y-2, y+3):
                     for xAdj in range(x-2, x+3):
                         #if dugAdjacency[xAdjacent,yAdjacent] exists:
-                        try:
-                            dugsAdjacency[x,y]
+                        if (xAdj, yAdj) in dugsAdjacency:
+                            print(x, y, xAdj, yAdj, " do match")
                         #excessMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                         #if excessMines > 0 AND excessMines == (mines[xAdj,yAdj]-surroundCount(1)):
                             #Mark excess undug of [x,y] if it exists
@@ -198,6 +197,8 @@ def pySolver(dugs, mines, windows, events):
                 print("x,y not in dugAdjacency")
     #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
     #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
+    
+    #       rule 2 ends.
     return dugs, mines
 
 
