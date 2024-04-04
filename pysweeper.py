@@ -170,29 +170,30 @@ def pySolver(dugs, mines, windows, events):
                     for xClick in range(x-1, x+2):
                         try:
                             if dugs[yClick][xClick] == 0:               #if surrounding tile is undug
-                                try:
+                                if (x,y) in dugsAdjacency:
                                     dugsAdjacency[x,y] += [(xClick, yClick)]      #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
-                                except KeyError:
-                                    print("handled keyerror of undug " + str((xClick,yClick)) + " in relation to dug " + str((x,y)))
-                                    dugsAdjacency[x,y] = [(xClick, yClick)]       #using keyerror for the sake of easier writing, TODO: Not do that.
+                                else:
+                                    dugsAdjacency[x,y] = [(xClick, yClick)]
                         except IndexError:
                             pass #it's ok
     
     #for y,x in all:
     for y in range(len(mines)):
         for x in range(len(mines[0])):
-            #if dugAdjacency[x,y] exists:
+            #for each dug-outline tile: (=dug tile, with non-zero undug tiles adjacent)
             if (x,y) in dugsAdjacency:
-                #for yAdjacent in range of y+-2, xAdjacent in range of x+-2:
+                #within 2 tiles distance of that dug-outline tile:
                 for yAdj in range(y-2, y+3):
                     for xAdj in range(x-2, x+3):
-                        #if dugAdjacency[xAdjacent,yAdjacent] exists:
+                        #if checked tile is *also* dug-outline:
                         if (xAdj, yAdj) in dugsAdjacency:
                             print(x, y, xAdj, yAdj, " do match")
-                        #excessMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
-                        #if excessMines > 0 AND excessMines == (mines[xAdj,yAdj]-surroundCount(1)):
-                            #Mark excess undug of [x,y] if it exists
-                            #Dig excess undug of [xAdj,yAdj] if it exists
+                            #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
+                            #noncommonsInt = #foreach in dugsAdjacency[x,y], if also in [xAdj,yAdj], remove. Count the remaining ones. 
+                            #excessUncertainMines = mines[x,y] - surroundCount(x,y,dugs,1) - noncommonsInt
+                            #if excessUncertainMines > 0 AND excessUncertainMines == (mines[xAdj,yAdj]-surroundCount(1)):
+                                #Mark excess undug of [x,y] if it exists
+                                #Dig excess undug of [xAdj,yAdj] if it exists
             else:
                 print("x,y not in dugAdjacency")
     #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
