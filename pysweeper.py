@@ -189,9 +189,21 @@ def pySolver(dugs, mines, windows, events):
                         if (xAdj, yAdj) in dugsAdjacency:
                             print(x, y, xAdj, yAdj, " do match")
                             #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
-                            #noncommonsInt = #foreach in dugsAdjacency[x,y], if also in [xAdj,yAdj], remove. Count the remaining ones. 
-                            #excessUncertainMines = mines[x,y] - surroundCount(x,y,dugs,1) - noncommonsInt
-                            #if excessUncertainMines > 0 AND excessUncertainMines == (mines[xAdj,yAdj]-surroundCount(1)):
+                            tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
+                            for undugTile in tempXYs:
+                                if undugTile in dugsAdjacency[xAdj,yAdj]:
+                                    tempXYs.remove(undugTile)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
+                            noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
+#(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
+                            excessUncertainMines = mines[x,y] - surroundCount(x,y,dugs,1) - noncommonsInt
+#                           if excessUncertainMines are enough to saturate the [Adj] tile:
+                            if excessUncertainMines > 0 AND ( excessUncertainMines == (mines[xAdj,yAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
+                                tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
+                                for undugTile in tempXYAdjs:
+                                    if undugTile in dugsAdjacency[x,y]:
+                                        tempXYAdjs.remove(undugTile)
+                            #for both temps, mark correctly
+                            
                                 #Mark excess undug of [x,y] if it exists
                                 #Dig excess undug of [xAdj,yAdj] if it exists
             else:
