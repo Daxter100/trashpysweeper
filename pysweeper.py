@@ -190,17 +190,18 @@ def pySolver(dugs, mines, windows, events):
                         for xAdj in range(x-2, x+3):
                             #if checked tile is *also* dug-outline:
                             if (xAdj, yAdj) in dugsAdjacency:
-                                print(x, y, xAdj, yAdj, " do match")
                                 #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
                                 for undugTile in tempXYs:
                                     if undugTile in dugsAdjacency[xAdj,yAdj]:
+                                        print("remove common", x, y, "|", xAdj, yAdj, undugTile)    #TODO find problem in not getting all tiles with this
                                         tempXYs.remove(undugTile)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
                                 noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
     #(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
                                 excessUncertainMines = mines[y][x] - surroundCount(x,y,dugs,1) - noncommonsInt
     #                           if excessUncertainMines are enough to saturate the [Adj] tile:
                                 if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
+                                    print("found in high", x, y, "related to low", xAdj, yAdj)
                                     tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
                                     for undugTile in tempXYAdjs:
                                         if undugTile in dugsAdjacency[x,y]:
@@ -215,7 +216,7 @@ def pySolver(dugs, mines, windows, events):
                                     #Mark excess undug of [x,y] if it exists
                                     #Dig excess undug of [xAdj,yAdj] if it exists
                 else:
-                    print("x,y not in dugAdjacency")
+                    pass
     #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
     #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
     
