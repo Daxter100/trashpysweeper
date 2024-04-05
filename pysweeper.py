@@ -178,36 +178,44 @@ def pySolver(dugs, mines, windows, events):
                             pass #it's ok
     
     #for y,x in all:
-    for y in range(len(mines)):
-        for x in range(len(mines[0])):
-            #for each dug-outline tile: (=dug tile, with non-zero undug tiles adjacent)
-            if (x,y) in dugsAdjacency:
-                #within 2 tiles distance of that dug-outline tile:
-                for yAdj in range(y-2, y+3):
-                    for xAdj in range(x-2, x+3):
-                        #if checked tile is *also* dug-outline:
-                        if (xAdj, yAdj) in dugsAdjacency:
-                            print(x, y, xAdj, yAdj, " do match")
-                            #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
-                            tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
-                            for undugTile in tempXYs:
-                                if undugTile in dugsAdjacency[xAdj,yAdj]:
-                                    tempXYs.remove(undugTile)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
-                            noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
-#(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
-                            excessUncertainMines = mines[x,y] - surroundCount(x,y,dugs,1) - noncommonsInt
-#                           if excessUncertainMines are enough to saturate the [Adj] tile:
-                            if excessUncertainMines > 0 AND ( excessUncertainMines == (mines[xAdj,yAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
-                                tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
-                                for undugTile in tempXYAdjs:
-                                    if undugTile in dugsAdjacency[x,y]:
-                                        tempXYAdjs.remove(undugTile)
-                            #for both temps, mark correctly
-                            
-                                #Mark excess undug of [x,y] if it exists
-                                #Dig excess undug of [xAdj,yAdj] if it exists
-            else:
-                print("x,y not in dugAdjacency")
+    somethingClicked = True
+    while somethingClicked:
+        somethingClicked = False
+        for y in range(len(mines)):
+            for x in range(len(mines[0])):
+                #for each dug-outline tile: (=dug tile, with non-zero undug tiles adjacent)
+                if (x,y) in dugsAdjacency:
+                    #within 2 tiles distance of that dug-outline tile:
+                    for yAdj in range(y-2, y+3):
+                        for xAdj in range(x-2, x+3):
+                            #if checked tile is *also* dug-outline:
+                            if (xAdj, yAdj) in dugsAdjacency:
+                                print(x, y, xAdj, yAdj, " do match")
+                                #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
+                                tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
+                                for undugTile in tempXYs:
+                                    if undugTile in dugsAdjacency[xAdj,yAdj]:
+                                        tempXYs.remove(undugTile)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
+                                noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
+    #(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
+                                excessUncertainMines = mines[y][x] - surroundCount(x,y,dugs,1) - noncommonsInt
+    #                           if excessUncertainMines are enough to saturate the [Adj] tile:
+                                if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
+                                    tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
+                                    for undugTile in tempXYAdjs:
+                                        if undugTile in dugsAdjacency[x,y]:
+                                            tempXYAdjs.remove(undugTile)
+                                    #for both temps, mark correctly
+                                    for instruction in [(tempXYs, 1), (tempXYAdjs, 0)]: #inst[1] is click-mode-intent, inst[1]==1 for dig, inst[1]==0 for mark
+                                        for tile in instruction[0]:                     #inst[0] is list of tiles(tuples)
+                                            dugs, mines, diodeBool = click(tile[0], tile[1], instruction[1], dugs, mines, windows, events)
+                                            if diodeBool:   #diodebool ends up true if anything ends up being clicked
+                                                somethingClicked = True
+                                
+                                    #Mark excess undug of [x,y] if it exists
+                                    #Dig excess undug of [xAdj,yAdj] if it exists
+                else:
+                    print("x,y not in dugAdjacency")
     #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
     #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
     
