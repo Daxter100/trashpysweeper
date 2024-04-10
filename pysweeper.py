@@ -193,15 +193,18 @@ def pySolver(dugs, mines, windows, events):
                                 #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
                                 for undugTile in tempXYs:
+                                    print("checking", undugTile)
+                                    print("dugsAdj[",xAdj,",",yAdj,"]:", dugsAdjacency[xAdj,yAdj]) #TODO check if undugTile.remove removes from dugAdjacency, disappearing some tuples
                                     if undugTile in dugsAdjacency[xAdj,yAdj]:
-                                        print("remove common", x, y, "|", xAdj, yAdj, undugTile)    #TODO find problem in not getting all tiles with this
+                                        print("remove common undug tile:", undugTile, "of pair:", x, y, "|", xAdj, yAdj, "from XYs:", tempXYs)    #TODO find problem in not getting all tiles with this
                                         tempXYs.remove(undugTile)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
+                                        print("resulting XYs:", tempXYs)
                                 noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
     #(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
                                 excessUncertainMines = mines[y][x] - surroundCount(x,y,dugs,1) - noncommonsInt
     #                           if excessUncertainMines are enough to saturate the [Adj] tile:
                                 if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
-                                    print("found in high", x, y, "related to low", xAdj, yAdj)
+                                    print("OOOOOO found in high", x, y, "related to low", xAdj, yAdj)
                                     tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
                                     for undugTile in tempXYAdjs:
                                         if undugTile in dugsAdjacency[x,y]:
@@ -210,6 +213,7 @@ def pySolver(dugs, mines, windows, events):
                                     for instruction in [(tempXYs, 1), (tempXYAdjs, 0)]: #inst[1] is click-mode-intent, inst[1]==1 for dig, inst[1]==0 for mark
                                         for tile in instruction[0]:                     #inst[0] is list of tiles(tuples)
                                             dugs, mines, diodeBool = click(tile[0], tile[1], instruction[1], dugs, mines, windows, events)
+                                            print(tile, "|||", instruction)
                                             if diodeBool:   #diodebool ends up true if anything ends up being clicked
                                                 somethingClicked = True
                                 
