@@ -304,7 +304,11 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         
         print(window[event].ButtonColor)
         #perform click
-        dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+        try:
+            dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+        except Exception as error:
+            print("\n\n\nError during manual click() event.\n\n\n\n\n", error)
+        
         #^ this? I take no questions at this time (readability)
     
     window.close()
