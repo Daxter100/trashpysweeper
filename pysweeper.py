@@ -90,7 +90,7 @@ def surroundCount(ex, why, booleanOrDugField, measureTarget=1) -> int:          
 def click(ex, why, mode, dugs, mines, windows, events):
     flippedSomething = False
     if 0<=why<=len(mines)-1:        #sanitize, to prevent window[event] reaching outside the intended area when used in pySolver, with manual input events
-        if 0<=ex<=len(mines[0])-1:  #TODO: move checks to pySolver
+        if 0<=ex<=len(mines[0])-1:  #soft TODO: move checks to pySolver
             if mode:                                            #if (intent to dig)
                 if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
                     dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
@@ -189,15 +189,17 @@ def pySolver(dugs, mines, windows, events):
                     for yAdj in range(y-2, y+3):
                         for xAdj in range(x-2, x+3):
                             #if checked tile is *also* dug-outline:
-                            if (xAdj, yAdj) in dugsAdjacency:
+                            if (xAdj, yAdj) in dugsAdjacency:\
+                                raise Exception("TODO: understand and fix this segment")
                                 print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
                                 #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
                                 XYsRemovalList = []
                                 for undugTile in tempXYs:
                                     if undugTile in dugsAdjacency[xAdj,yAdj]:
-                                        XYsRemovalList += undugTile
+                                        XYsRemovalList += tuple([undugTile])
                                 print("complete list of vtiles, before:", dugsAdjacency[xAdj,yAdj])
+                                print("complete removal list, before:", XYsRemovalList)
                                 for THEINVALIDS in XYsRemovalList:
                                         print("remove common undug tile:", THEINVALIDS, "of pairs:", x, y, "|", xAdj, yAdj, "from XYs:", tempXYs)    #TODO find problem in not getting all tiles with this
                                         tempXYs.remove(THEINVALIDS)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
