@@ -189,8 +189,7 @@ def pySolver(dugs, mines, windows, events):
                     for yAdj in range(y-2, y+3):
                         for xAdj in range(x-2, x+3):
                             #if checked tile is *also* dug-outline:
-                            if (xAdj, yAdj) in dugsAdjacency:\
-                                raise Exception("TODO: understand and fix this segment")
+                            if (xAdj, yAdj) in dugsAdjacency:
                                 print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
                                 #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
@@ -222,6 +221,7 @@ def pySolver(dugs, mines, windows, events):
                                             print(tile, "|||", instruction)
                                             if diodeBool:   #diodebool ends up true if anything ends up being clicked
                                                 somethingClicked = True
+                                    raise Exception("TODO: understand this segment and find: 1. Solver Step button being painted with Mark Flag graphic, 2. Existent infinite loop, 3. way to make it work.")
                                 
                                     #Mark excess undug of [x,y] if it exists
                                     #Dig excess undug of [xAdj,yAdj] if it exists
