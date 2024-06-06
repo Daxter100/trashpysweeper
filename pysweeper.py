@@ -21,6 +21,8 @@ def printField(field:list) -> bool:
         return False
 
 def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yClick:int = 0):
+
+    pristinefield = list([False])       #directly output as dugfield, to track digging and marked mines. Will only be formatted if field is valid
     if (cols>=3) and (rows>=3) and (float(mines/(rows*cols))<0.75 and (mines+9<=rows*cols)) :   #if size and amount of mines valid
         field = [[False for i in range(cols)] for j in range(rows)]             #assign grid of False bools, for mine locations
         if xClick < 2:                                                      #if first click at any edge, move away from edge
@@ -46,8 +48,8 @@ def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yCli
             if field[y][x] == False:    #if ground was clear,
                 field[y][x] = True      #do plant,
                 planted += 1            #and increment counter
-        y = yClick-1
         
+        y = yClick-1
         while y <= yClick+1:                                                #remove temp mines
             x = xClick-1
             while x<= xClick+1:
@@ -60,25 +62,23 @@ def generateField(cols: int=10, rows: int=4, mines: int=10, xClick:int = 0, yCli
             for why in range(rows):
                 proximities[why][ex] += surroundCount(ex, why, field)   #surroundCount by default counts true bools surrounding (and including) x,y
                 if field[why][ex]:
-                    proximities[why][ex] = proximities[why][ex] * (-1)
+                    proximities[why][ex] = proximities[why][ex] * (-1)  #for mine tiles, proximity number to negative
         
+        pristinefield = [[0 for i in range(cols)] for j in range(rows)]     #since field was valid, directly output as dugfield, to track digging and marked mines
     else:                                                                                       #if invalid field
         print("error: size<(3*3) or mines>75% or non-mines<9")
         proximities = list([False])                                                                   #return empty
-        pristinefield = list([False])
-    
-    pristinefield = [[0 for i in range(cols)] for j in range(rows)]     #directly output as dugfield, to track digging and marked mines
     
     return proximities, pristinefield
 
-def surroundCount(ex, why, booleanOrDugField, measureTarget=1) -> int:           #on being provided dugfield, counts Marks
+def surroundCount(ex, why, booleanFieldOrDugField, measureTarget=1) -> int:           #on being provided dugfield, counts Marks
     count = 0
     y = why-1
     while y <= why+1:
         x = ex-1
         while x <= ex+1:
             try:
-                if y>=0 and x>=0 and int(booleanOrDugField[y][x])==int(measureTarget):   #counts Trues for booleans, or specifically 1s, for dugfield
+                if y>=0 and x>=0 and int(booleanFieldOrDugField[y][x])==int(measureTarget):   #counts Trues for booleanField, or specifically 1s, for dugfield
                     count += 1
             except IndexError:
                 pass #it's ok
@@ -86,30 +86,30 @@ def surroundCount(ex, why, booleanOrDugField, measureTarget=1) -> int:          
         y+=1
     return count
 
-#        (x, y, dig/mark, dugfield, minefield, window, event): click function targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
+#        (x, y, dig/mark, dugfield, minefield, window, event): click function, targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
 def click(ex, why, mode, dugs, mines, windows, events):
-    flippedSomething = False
+    flippedSomething = False                    #vestigial output
     if 0<=why<=len(mines)-1:        #sanitize, to prevent window[event] reaching outside the intended area when used in pySolver, with manual input events
         if 0<=ex<=len(mines[0])-1:  #soft TODO: move checks to pySolver
             if mode:                                            #if (intent to dig)
-                if dugs[why][ex] == 0:                               #if neither dug(2) nor marked(1)                                   #-----------
+                if dugs[why][ex] == 0:                               #if specific tile is neither dug(2) nor marked(1)                  #-----------
                     dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
                     flippedSomething = True                                                                                             #
-                    if (mines[why][ex]<0):                               # display result                                               #
+                    if (mines[why][ex]<0):                               # display result (negative for mine)                           #
                         windows[events].update('L', button_color=('white','red'))                                                       #
                         windows['-MESSAGE-'].update('Boom :(')                                                                          #
-                    else:                                                                                                               #    Dig
+                    else:                                                # else, show proximity number                                  #    Dig
                         windows[events].update(mines[why][ex], button_color=('white','black'))                                          #
                         windows['-MESSAGE-'].update('Clear!')                                                                           #
                 elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform                             #
                     windows['-MESSAGE-'].update('No Danger Allowed')                                                                    #
-                else:                                                       #else, dug(2) spot was just clicked, only notify            #
+                else:                                                       #else, a dug(2) spot was just clicked, notify          #
                     windows['-MESSAGE-'].update('No Backtracking Allowed')                                                              #-----------
             else:                                                       #else (intent to mark)
                 if dugs[why][ex] != 2:                                #if not dug(2)                                                    #-----------
                     dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
-                    flippedSomething = True
-                    if dugs[why][ex]:                                    # if finally marked(1),                                        #
+                    flippedSomething = True                                                                                             #
+                    if dugs[why][ex]:                                    # if, after flip, is now marked(1),                            #
                         windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
                         windows['-MESSAGE-'].update('Smart.')                                                                           #
                     else:                                                                                                               #    Mark
@@ -128,18 +128,18 @@ def pySolver(dugs, mines, windows, events):
     boolField = [[False for i in range(len(mines[0]))] for j in range(len(mines))]
     for y in range(len(mines)):
         for x in range(len(mines[0])):
-            boolField[y][x] = bool(mines[y][x] < 0)             #legibility bool()
+            boolField[y][x] = bool(mines[y][x] < 0)             #useless but for legibility bool() type
     
     somethingClicked = True
-    diodeBool = False
-    while somethingClicked:                 #go on as long as stuff is done
+    diodeBool = False                       #used to only ever change somethingClicked's state false->true, and never true->false
+    while somethingClicked:                 #go on as long as stuff keeps being done
         somethingClicked = False
         for y in range(len(mines)):
             for x in range(len(mines[0])):
-                if dugs[y][x] == 2:
-                    minesNotFound = int(mines[y][x] - surroundCount(x, y, dugs))    #surroundCount dugfield counts Marks around the x y spot (instances of dugfield[y][x]==1, as opposed to ==0 or ==2)
-                    safeTilesNotDug = int(minesNotFound - surroundCount(x, y, dugs, 0))    #when provided with target, counts target instead (in this case, ==0, therefore pristine tiles)
-                    if minesNotFound == 0:                  #rule 0
+                if dugs[y][x] == 2:         #for every single dug(2) tile,
+                    minesNotFound = int(mines[y][x] - surroundCount(x, y, dugs))    #surroundCount(dugfield) counts Marks(1) around the x,y spot (instances of dugfield[y][x]==1, as opposed to ==0 or ==2)
+                    safeTilesNotDug = int(minesNotFound - surroundCount(x, y, dugs, 0))    #surroundCount, when provided with target, counts target instead (in this case, ==0, therefore pristine tiles)
+                    if minesNotFound == 0:                  #rule 0:        if no mines remain unmarked, dig everything
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
@@ -149,7 +149,7 @@ def pySolver(dugs, mines, windows, events):
                                         somethingClicked = True
                                 except IndexError:
                                     print("minesNotFound IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
-                    elif safeTilesNotDug == 0:              #rule 1
+                    elif safeTilesNotDug == 0:              #rule 1:        if mines not found are equal to undug tiles, mark everything
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
@@ -236,8 +236,8 @@ def pySolver(dugs, mines, windows, events):
 
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
     generatedYet = False    #flipped once, on successful minefield generation
-    Regenerate = False      #returned as output, tracking intent to rerun pySweeper(true), instead of exiting everything(false)
-    interactMode = False    #tracks marking known mine locations(false) vs digging up a square(true)
+    Regenerate = False      #returned as output, tracking intent to rerun pySweeper(true), instead of exiting(false)
+    interactMode = False    #tracks intent of marking known mine locations(false) vs digging up a square(true)
     wasTileChangedDuringLastEvent = False   #vestigial bool, returned by click(), used by pySolver() for now
     
     sg.theme('Dark Blue 3') #default button color tuple: ('#FFFFFF', '#283b5b')
@@ -272,7 +272,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             break               #exit
         if event == 'Solver Step':
             if generatedYet:
-                dugfield, minefield = pySolver(dugfield, minefield, window, event)                            #run solver once
+                dugfield, minefield = pySolver(dugfield, minefield, window, event)                            #run solver once (solver calls the click() function that itself updates the gui
                 window['-MESSAGE-'].update('Solved')
             else:
                 window['-MESSAGE-'].update('No table...')
@@ -296,12 +296,12 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         #if loop reaches past this point, there's been a click on a tile
         yDig, xDig = event
         if not generatedYet:
-            if not interactMode:                #if mode in default(mark), therefore probably unchanged. Tutorial setup
+            if not interactMode:                #: mode is still in default(mark), therefore probably as of yet unchanged. In this case, Tutorial setup
                 window['-MESSAGE-'].update('Toggle Mode to start digging!')
                 window['-MODE-'].update('🚩: Mark')
                 continue    #tutorial failed
             else:
-                minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)
+                minefield, dugfield = generateField(int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-']), xDig+1, yDig+1)    #generate random minefield (or invalid field in case of bad values), and initialize empty dugfield
                 if printField(minefield) == False:  #validity check is in print function
                     window['-MESSAGE-'].update('Bad table >:(')
                     continue                        #if invalid, do not set generatedYet flag, do not update boxes
@@ -314,8 +314,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window, event)
         except Exception as error:
             print("\n\n\nError during manual click() event.\n\n\n\n\n", error)
-        
-        #^ this? I take no questions at this time (readability)
+        #^ this errorcheck? I take no questions at this time (readability. no idea when it would hit)
     
     window.close()
     return Regenerate, int(values['-COLUMNS-']), int(values['-ROWS-']), int(values['-MINES-'])
