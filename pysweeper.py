@@ -149,7 +149,7 @@ def pySolver(dugs, mines, windows, events):
                                         somethingClicked = True
                                 except IndexError:
                                     print("minesNotFound IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
-                    elif safeTilesNotDug == 0:              #rule 1:        if mines not found are equal to undug tiles, mark everything
+                    elif safeTilesNotDug == 0:              #rule 1:        if unfound mines are equal to undug tiles, mark everything
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
@@ -170,12 +170,14 @@ def pySolver(dugs, mines, windows, events):
                     for xClick in range(x-1, x+2):
                         try:
                             if dugs[yClick][xClick] == 0:               #if surrounding tile is undug
-                                if (x,y) in dugsAdjacency:
-                                    dugsAdjacency[x,y] += [(xClick, yClick)]      #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
+                                if (x,y) in dugsAdjacency:              #add undug coords (nclicks) tuple, to dictionary of lists, with key=(x,y); 
+                                    dugsAdjacency[x,y] += [(xClick, yClick)]
                                 else:
                                     dugsAdjacency[x,y] = [(xClick, yClick)]
                         except IndexError:
                             pass #it's ok
+    
+    #by this stage, dugsAdjacency is dictionary of DUG tiles(x,y), that DO have undug tiles(xClick, yClick) surrounding them. Each tile entry, has (x,y) key, and contains list of all undug (xClick,yClick)s surrounding the (x,y)
     
     #for y,x in all:
     somethingClicked = True
@@ -183,15 +185,15 @@ def pySolver(dugs, mines, windows, events):
         somethingClicked = False
         for y in range(len(mines)):
             for x in range(len(mines[0])):
-                #for each dug-outline tile: (=dug tile, with non-zero undug tiles adjacent)
+                #SOFT TODO, rewrite using foreach in dugsAdj dictionary, extracting the x,y pair from the dictionary keys
                 if (x,y) in dugsAdjacency:
-                    #within 2 tiles distance of that dug-outline tile:
+                    #check tiles within 2 tiles distance of that dug-outline tile:
                     for yAdj in range(y-2, y+3):
                         for xAdj in range(x-2, x+3):
-                            #if checked tile is *also* dug-outline:
+                            #if checked tile is *also* in dugsAdj:
                             if (xAdj, yAdj) in dugsAdjacency:
                                 print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
-                                #excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
+                                #pseudocode that is intended to be built below: excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
                                 XYsRemovalList = []
                                 for undugTile in tempXYs:
@@ -204,12 +206,18 @@ def pySolver(dugs, mines, windows, events):
                                         tempXYs.remove(THEINVALIDS)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
                                         print("resulting XYs:", tempXYs)
                                 print("complete list of vtiles, after:", dugsAdjacency[xAdj,yAdj])
+                                
+                                #List tempXYs, by this point ends up with non-common-with-(xAdj,yAdj) undugs, that are still adjacent to x,y
+                                
                                 noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
     #(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
                                 excessUncertainMines = mines[y][x] - surroundCount(x,y,dugs,1) - noncommonsInt
     #                           if excessUncertainMines are enough to saturate the [Adj] tile:
                                 if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
                                     print("OOOOOO found in high", x, y, "related to low", xAdj, yAdj)
+                                    
+                                    #TODO: until here code has no technical mistakes. Finalize solution.
+                                    
                                     tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
                                     for undugTile in tempXYAdjs:
                                         if undugTile in dugsAdjacency[x,y]:
