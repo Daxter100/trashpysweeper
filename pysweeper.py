@@ -190,22 +190,22 @@ def pySolver(dugs, mines, windows, events):
                     #check tiles within 2 tiles distance of that dug-outline tile:
                     for yAdj in range(y-2, y+3):
                         for xAdj in range(x-2, x+3):
-                            #if checked tile is *also* in dugsAdj:
-                            if (xAdj, yAdj) in dugsAdjacency:
-                                print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
+                            #if checked tile is *also* in dugsAdj ( and is not a self-check ):
+                            if ((x,y) != (xAdj,yAdj)) and ((xAdj, yAdj) in dugsAdjacency):
+                                #print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
                                 #pseudocode that is intended to be built below: excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
-                                tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy
+                                tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy, and scope definition
                                 XYsRemovalList = []
                                 for undugTile in tempXYs:
                                     if undugTile in dugsAdjacency[xAdj,yAdj]:
                                         XYsRemovalList += tuple([undugTile])
-                                print("complete list of vtiles, before:", dugsAdjacency[xAdj,yAdj])
-                                print("complete removal list, before:", XYsRemovalList)
+                                #print("complete list of vtiles, before:", dugsAdjacency[xAdj,yAdj])
+                                #print("complete removal list, before:", XYsRemovalList)
                                 for THEINVALIDS in XYsRemovalList:
-                                        print("remove common undug tile:", THEINVALIDS, "of pairs:", x, y, "|", xAdj, yAdj, "from XYs:", tempXYs)    #TODO find problem in not getting all tiles with this
+                                        #print("remove common undug tile:", THEINVALIDS, "of pairs:", x, y, "|", xAdj, yAdj, "from XYs:", tempXYs)    #TODO find problem in not getting all tiles with this
                                         tempXYs.remove(THEINVALIDS)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
-                                        print("resulting XYs:", tempXYs)
-                                print("complete list of vtiles, after:", dugsAdjacency[xAdj,yAdj])
+                                        #print("resulting XYs:", tempXYs)
+                                #print("complete list of vtiles, after:", dugsAdjacency[xAdj,yAdj])
                                 
                                 #List tempXYs, by this point ends up with non-common-with-(xAdj,yAdj) undugs, that are still adjacent to x,y
                                 
@@ -216,15 +216,15 @@ def pySolver(dugs, mines, windows, events):
                                 if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
                                     print("OOOOOO found in high", x, y, "related to low", xAdj, yAdj)
                                     
-                                    #TODO: until here code has no technical mistakes. Finalize solution.
+                                    #TODO: until here code has no technical mistakes. Finalize solution
                                     
                                     tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
                                     for undugTile in tempXYAdjs:
                                         if undugTile in dugsAdjacency[x,y]:
                                             tempXYAdjs.remove(undugTile)
                                     #for both temps, mark correctly
-                                    for instruction in [(tempXYs, 1), (tempXYAdjs, 0)]: #inst[1] is click-mode-intent, inst[1]==1 for dig, inst[1]==0 for mark
-                                        for tile in instruction[0]:                     #inst[0] is list of tiles(tuples)
+                                    for instruction in [(tempXYs, 1), (tempXYAdjs, 0)]: #instruction[1] is click-mode-intent, instruction[1]==1 for dig, instruction[1]==0 for mark
+                                        for tile in instruction[0]:                     #instruction[0] is list of tiles(tuples). Specifically, tempXYs and tempXYAdjs each.#
                                             dugs, mines, diodeBool = click(tile[0], tile[1], instruction[1], dugs, mines, windows, events)
                                             print(tile, "|||", instruction)
                                             if diodeBool:   #diodebool ends up true if anything ends up being clicked
