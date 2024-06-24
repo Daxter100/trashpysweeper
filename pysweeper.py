@@ -87,7 +87,7 @@ def surroundCount(ex, why, booleanFieldOrDugField, measureTarget=1) -> int:     
     return count
 
 #        (x, y, dig/mark, dugfield, minefield, window, event): click function, targets specific square, and either marks it, or reads it and reveals it. In both cases, this function also provides the user feedback
-def click(ex, why, mode, dugs, mines, windows, events):
+def click(ex, why, mode, dugs, mines, windows):
     flippedSomething = False                    #vestigial output
     if 0<=why<=len(mines)-1:        #sanitize, to prevent window[event] reaching outside the intended area when used in pySolver, with manual input events
         if 0<=ex<=len(mines[0])-1:  #soft TODO: move checks to pySolver
@@ -96,10 +96,10 @@ def click(ex, why, mode, dugs, mines, windows, events):
                     dugs[why][ex] = 2                                    # set spot to dug(2), and                                      #
                     flippedSomething = True                                                                                             #
                     if (mines[why][ex]<0):                               # display result (negative for mine)                           #
-                        windows[events].update('L', button_color=('white','red'))                                                       #
+                        windows[(why,ex)].update('L', button_color=('white','red'))                                                       #
                         windows['-MESSAGE-'].update('Boom :(')                                                                          #
                     else:                                                # else, show proximity number                                  #    Dig
-                        windows[events].update(mines[why][ex], button_color=('white','black'))                                          #
+                        windows[(why,ex)].update(mines[why][ex], button_color=('white','black'))                                          #
                         windows['-MESSAGE-'].update('Clear!')                                                                           #
                 elif dugs[why][ex] == 1:                             #else if marked(1), prevent and inform                             #
                     windows['-MESSAGE-'].update('No Danger Allowed')                                                                    #
@@ -110,10 +110,10 @@ def click(ex, why, mode, dugs, mines, windows, events):
                     dugs[why][ex] = int(not bool(dugs[why][ex]))  #toggle (1)<->(0) (method for fun)                                    #
                     flippedSomething = True                                                                                             #
                     if dugs[why][ex]:                                    # if, after flip, is now marked(1),                            #
-                        windows[events].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
+                        windows[(why,ex)].update('🚩', button_color=('red', '#788bab'))  #display mark                                    #
                         windows['-MESSAGE-'].update('Smart.')                                                                           #
                     else:                                                                                                               #    Mark
-                        windows[events].update('', button_color=('black', '#283b5b'))  #display undug                                   #
+                        windows[(why,ex)].update('', button_color=('black', '#283b5b'))  #display undug                                   #
                         windows['-MESSAGE-'].update('Wise.')                                                                            #
                 else:                                                                                                                   #
                     windows['-MESSAGE-'].update('Funny.')                                                                               #-----------
@@ -130,10 +130,11 @@ def pySolver(dugs, mines, windows, events):
         for x in range(len(mines[0])):
             boolField[y][x] = bool(mines[y][x] < 0)             #useless but for legibility bool() type
     
-    somethingClicked = True
-    diodeBool = False                       #used to only ever change somethingClicked's state false->true, and never true->false
-    while somethingClicked:                 #go on as long as stuff keeps being done
-        somethingClicked = False
+    somethingClicked = 1
+    diodeBool = False                       #used to only ever change somethingClicked's state false->true, and never true->false (soft todo, maybe vestigial?)
+    repeatWhole = False
+    while somethingClicked>0:                 #go on *twice* after last time something was changed, as dirty fix (soft todo, create a less dumb solution)
+        somethingClicked -= 1
         for y in range(len(mines)):
             for x in range(len(mines[0])):
                 if dugs[y][x] == 2:         #for every single dug(2) tile,
@@ -143,10 +144,10 @@ def pySolver(dugs, mines, windows, events):
                         for yClick in range(y-1, y+2):
                             for xClick in range(x-1, x+2):
                                 try:
-                                    dugs, mines, diodeBool = click(xClick, yClick, True, dugs, mines, windows, (yClick,xClick))     #dig all surrounding
+                                    dugs, mines, diodeBool = click(xClick, yClick, True, dugs, mines, windows)     #dig all surrounding
                                     if diodeBool:
-                                        print("rule 0 (dug empty)", str(xClick), str(yClick))
-                                        somethingClicked = True
+                                        somethingClicked = 1
+                                        repeatWhole = True
                                 except IndexError:
                                     print("minesNotFound IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
                     elif safeTilesNotDug == 0:              #rule 1:        if unfound mines are equal to undug tiles, mark everything
@@ -154,10 +155,10 @@ def pySolver(dugs, mines, windows, events):
                             for xClick in range(x-1, x+2):
                                 try:
                                     if dugs[yClick][xClick] == 0:
-                                        dugs, mines, diodeBool = click(xClick, yClick, False, dugs, mines, windows, (yClick,xClick))    #Mark-attempt all surrounding
+                                        dugs, mines, diodeBool = click(xClick, yClick, False, dugs, mines, windows)    #Mark-attempt all surrounding
                                     if diodeBool:
-                                        print("rule 1 (marked mine)", str(xClick)+",", str(yClick))
-                                        somethingClicked = True
+                                        somethingClicked = 1
+                                        repeatWhole = True
                                 except IndexError:
                                     print("safeTilesNotDug IndexError handled at " + str(xClick) + ", " + str(yClick))    #it's ok
     
@@ -180,9 +181,9 @@ def pySolver(dugs, mines, windows, events):
     #by this stage, dugsAdjacency is dictionary of DUG tiles(x,y), that DO have undug tiles(xClick, yClick) surrounding them. Each tile entry, has (x,y) key, and contains list of all undug (xClick,yClick)s surrounding the (x,y)
     
     #for y,x in all:
-    somethingClicked = True
-    while somethingClicked:
-        somethingClicked = False
+    somethingClicked = 1
+    while somethingClicked > 0:
+        somethingClicked -= 1
         for y in range(len(mines)):
             for x in range(len(mines[0])):
                 #SOFT TODO, rewrite using foreach in dugsAdj dictionary, extracting the x,y pair from the dictionary keys
@@ -192,54 +193,42 @@ def pySolver(dugs, mines, windows, events):
                         for xAdj in range(x-2, x+3):
                             #if checked tile is *also* in dugsAdj ( and is not a self-check ):
                             if ((x,y) != (xAdj,yAdj)) and ((xAdj, yAdj) in dugsAdjacency):
-                                #print("\t\tstart checking pair: ^"+str((x,y)), "v"+str((xAdj,yAdj)))
                                 #pseudocode that is intended to be built below: excessUncertainMines = (mines[x,y]-surroundCount(1)) - number-of-noncommon-undugs-from-dugAdjacency(x,y,xAdj,yAdj)
                                 tempXYs = dugsAdjacency[x,y].copy()  #non-shallow copy, and scope definition
                                 XYsRemovalList = []
                                 for undugTile in tempXYs:
                                     if undugTile in dugsAdjacency[xAdj,yAdj]:
                                         XYsRemovalList += tuple([undugTile])
-                                #print("complete list of vtiles, before:", dugsAdjacency[xAdj,yAdj])
-                                #print("complete removal list, before:", XYsRemovalList)
-                                for THEINVALIDS in XYsRemovalList:
-                                        #print("remove common undug tile:", THEINVALIDS, "of pairs:", x, y, "|", xAdj, yAdj, "from XYs:", tempXYs)    #TODO find problem in not getting all tiles with this
-                                        tempXYs.remove(THEINVALIDS)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
-                                        #print("resulting XYs:", tempXYs)
-                                #print("complete list of vtiles, after:", dugsAdjacency[xAdj,yAdj])
+                                        #seperate detection and removal steps, because "[].remove()", changes indexation of list, and that change is *not* taken into account by for()
+                                for tileToBeRemoved in XYsRemovalList:
+                                        tempXYs.remove(tileToBeRemoved)     #remove elements of dA[x,y] that are common with dA[xAdj,yAdj] from temp copy-list
                                 
                                 #List tempXYs, by this point ends up with non-common-with-(xAdj,yAdj) undugs, that are still adjacent to x,y
                                 
                                 noncommonsInt = len(tempXYs)          #noncommon tile number is leftovers
     #(hypothetically if all non-commons *are* mines, then) uncertain mines = total mines - marked mines - non-commons
                                 excessUncertainMines = mines[y][x] - surroundCount(x,y,dugs,1) - noncommonsInt
-    #                           if excessUncertainMines are enough to saturate the [Adj] tile:
                                 if excessUncertainMines > 0 and ( excessUncertainMines == (mines[yAdj][xAdj] - surroundCount(xAdj,yAdj,dugs,1)) ):
                                     print("OOOOOO found in high", x, y, "related to low", xAdj, yAdj)
                                     
-                                    #TODO: until here code has no technical mistakes. Finalize solution
-                                    
+                                    #repeat same removal process as with tempXYs above
                                     tempXYAdjs = dugsAdjacency[xAdj,yAdj].copy()
+                                    XYAdjsRemovalList = []
                                     for undugTile in tempXYAdjs:
                                         if undugTile in dugsAdjacency[x,y]:
-                                            tempXYAdjs.remove(undugTile)
+                                            XYAdjsRemovalList += tuple([undugTile])
+                                    for tileToBeRemoved in XYAdjsRemovalList:
+                                            tempXYAdjs.remove(tileToBeRemoved)
+                                    
                                     #for both temps, mark correctly
-                                    for instruction in [(tempXYs, 1), (tempXYAdjs, 0)]: #instruction[1] is click-mode-intent, instruction[1]==1 for dig, instruction[1]==0 for mark
-                                        for tile in instruction[0]:                     #instruction[0] is list of tiles(tuples). Specifically, tempXYs and tempXYAdjs each.#
-                                            dugs, mines, diodeBool = click(tile[0], tile[1], instruction[1], dugs, mines, windows, events)
+                                    for instruction in [(tempXYs, 0), (tempXYAdjs, 1)]: #instruction[1] is click-mode-intent, instruction[1]==1 for dig, instruction[1]==0 for mark
+                                        for tile in instruction[0]:                     #instruction[0] is list of tiles(tuples). Specifically, tempXYs and tempXYAdjs each.
+                                            dugs, mines, diodeBool = click(tile[0], tile[1], instruction[1], dugs, mines, windows)
                                             print(tile, "|||", instruction)
                                             if diodeBool:   #diodebool ends up true if anything ends up being clicked
-                                                somethingClicked = True
-                                    raise Exception("TODO: understand this segment and find: 1. Solver Step button being painted with Mark Flag graphic, 2. Existent infinite loop, 3. way to make it work.")
-                                
-                                    #Mark excess undug of [x,y] if it exists
-                                    #Dig excess undug of [xAdj,yAdj] if it exists
-                else:
-                    pass
-    #after full pass, run through *undug* tiles, finding adjacent dug tiles and their lists
-    #_note differences_, and if differences match numbers of mines or safe tiles, click corresponding tiles
-    
-    #       rule 2 ends.
-    return dugs, mines
+                                                somethingClicked = 1
+                                                repeatWhole = True
+    return dugs, mines, repeatWhole
 
 
 def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, int, int, int):
@@ -280,8 +269,12 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
             break               #exit
         if event == 'Solver Step':
             if generatedYet:
-                dugfield, minefield = pySolver(dugfield, minefield, window, event)                            #run solver once (solver calls the click() function that itself updates the gui
+                repeat = True
+                while repeat:
+                    repeat = False
+                    dugfield, minefield, repeat = pySolver(dugfield, minefield, window, event)                            #run solver once (solver calls the click() function that itself updates the gui
                 window['-MESSAGE-'].update('Solved')
+                printField(minefield)#debug
             else:
                 window['-MESSAGE-'].update('No table...')
             continue
@@ -319,7 +312,7 @@ def pySweeper(MAX_COLS:int = 10, MAX_ROWS:int = 10, MINES:int = 10) -> (bool, in
         print(window[event].ButtonColor)
         #perform click
         try:
-            dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window, event)
+            dugfield, minefield, wasTileChangedDuringLastEvent= click(xDig, yDig, interactMode, dugfield, minefield, window)
         except Exception as error:
             print("\n\n\nError during manual click() event.\n\n\n\n\n", error)
         #^ this errorcheck? I take no questions at this time (readability. no idea when it would hit)
